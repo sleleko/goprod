@@ -1,50 +1,50 @@
 package main
 
 import (
+	"context"
 	"net/http"
-	// TODO: Добавьте необходимые импорты:
-	// "context"
-	// "strings"
+	"strings"
+)
+
+type contextKey string
+
+const (
+	contextKeyUserID   contextKey = "userID"
+	contextKeyEmail    contextKey = "email"
+	contextKeyUsername contextKey = "username"
 )
 
 // AuthMiddleware проверяет JWT токен и устанавливает контекст пользователя
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Реализуйте проверку JWT токена
-		//
-		// Что нужно сделать:
-		// 1. Импортируйте "context" и "strings"
-		// 2. Получите заголовок Authorization из запроса
-		// 3. Проверьте, что заголовок не пустой
-		// 4. Проверьте формат "Bearer <token>" и извлеките токен
-		// 5. Валидируйте токен с помощью ValidateToken() из auth.go
-		// 6. Добавьте данные пользователя в контекст запроса
-		// 7. Передайте управление следующему обработчику
-		//
-		// Если токен невалиден - верните 401 Unauthorized
-		// Если токен отсутствует - верните 401 Unauthorized
-		//
-		// Используйте:
-		// - r.Header.Get("Authorization")
-		// - strings.TrimPrefix(authHeader, "Bearer ")
-		// - context.WithValue(r.Context(), "userID", claims.UserID)
-		// - next.ServeHTTP(w, r.WithContext(ctx))
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			sendErrorResponse(w, "Authorization header is required", http.StatusUnauthorized)
+			return
+		}
 
-		// Временная заглушка - УДАЛИТЕ после реализации!
-		http.Error(w, "Middleware not implemented", http.StatusNotImplemented)
+		parts := strings.Fields(authHeader)
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			sendErrorResponse(w, "Authorization header must be in format: Bearer <token>", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := ValidateToken(parts[1])
+		if err != nil {
+			sendErrorResponse(w, "Invalid or expired token", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), contextKeyUserID, claims.UserID)
+		ctx = context.WithValue(ctx, contextKeyEmail, claims.Email)
+		ctx = context.WithValue(ctx, contextKeyUsername, claims.Username)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
 // GetUserIDFromContext извлекает ID пользователя из контекста
 func GetUserIDFromContext(r *http.Request) (int, bool) {
-	// TODO: Реализуйте извлечение userID из контекста
-	//
-	// Что нужно сделать:
-	// 1. Используйте r.Context().Value("userID")
-	// 2. Проведите type assertion к int
-	// 3. Верните значение и булевый флаг успешности
-	//
-	// Пример: userID, ok := r.Context().Value("userID").(int)
-
-	return 0, false
+	userID, ok := r.Context().Value(contextKeyUserID).(int)
+	return userID, ok
 }
