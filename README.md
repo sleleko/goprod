@@ -1,12 +1,11 @@
-# Практическое задание: Безопасный сервис аутентификации
+# Пример безопасного сервиса аутентификации
 
-## 🎯 Цель задания
+## 🎯 Цель
 
 Разработать безопасный REST API сервис с функциями регистрации и аутентификации пользователей на Go.
 
-## 📋 Что нужно реализовать
+## 📋 Реализовано
 
-### Обязательный функционал:
 - ✅ **Регистрация пользователя** с хешированием пароля (bcrypt)
 - ✅ **Вход в систему** с выдачей JWT токена
 - ✅ **Защищенный эндпоинт** для получения профиля (требует JWT)
@@ -66,77 +65,7 @@ docker-compose ps
 go mod download
 ```
 
-### 4. Что нужно реализовать
-
-Все файлы с пометкой TODO содержат заготовки функций, которые нужно завершить:
-
-#### 📄 `database.go` - Работа с базой данных
-- [ ] `CreateUser()` - создание пользователя
-- [ ] `GetUserByEmail()` - поиск по email
-- [ ] `GetUserByID()` - поиск по ID
-- [ ] `UserExistsByEmail()` - проверка существования
-
-#### 🔐 `auth.go` - Аутентификация и безопасность
-- [ ] `HashPassword()` - хеширование паролей bcrypt
-- [ ] `CheckPassword()` - проверка паролей
-- [ ] `GenerateToken()` - создание JWT токенов
-- [ ] `ValidateToken()` - проверка JWT токенов
-
-#### 🛡️ `middleware.go` - Защита эндпоинтов
-- [ ] `AuthMiddleware()` - проверка токенов
-
-#### 🌐 `handlers.go` - HTTP обработчики
-- [ ] `RegisterHandler()` - регистрация
-- [ ] `LoginHandler()` - авторизация
-- [ ] `ProfileHandler()` - профиль пользователя
-
-## 📝 Пошаговое руководство
-
-### Шаг 1: Реализуйте функции безопасности (`auth.go`)
-
-```go
-// Импортируйте необходимые пакеты
-import (
-    "golang.org/x/crypto/bcrypt"
-    "github.com/golang-jwt/jwt/v5"
-)
-
-// Реализуйте HashPassword
-func HashPassword(password string) (string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-    return string(bytes), err
-}
-```
-
-### Шаг 2: Реализуйте работу с БД (`database.go`)
-
-```go
-// ВАЖНО: Используйте параметризованные запросы!
-func CreateUser(email, username, passwordHash string) (*User, error) {
-    query := `INSERT INTO users (email, username, password_hash) VALUES ($1, $2, $3) RETURNING id, created_at`
-    // Реализуйте...
-}
-```
-
-### Шаг 3: Реализуйте middleware (`middleware.go`)
-
-```go
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // 1. Получите токен из заголовка Authorization
-        // 2. Проверьте формат "Bearer <token>"
-        // 3. Валидируйте токен
-        // 4. Добавьте данные в контекст
-        // 5. Передайте управление дальше
-    }
-}
-```
-
-### Шаг 4: Реализуйте обработчики (`handlers.go`)
-
-Каждый обработчик содержит детальные комментарии с пошаговыми инструкциями.
-
-### Шаг 5: Запустите и протестируйте
+### 4: Запустите и протестируйте
 
 ```bash
 # Запустите сервер
@@ -181,72 +110,6 @@ curl -X POST http://localhost:8080/login \
 # Замените YOUR_JWT_TOKEN на токен из ответа /login
 curl http://localhost:8080/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-## 🔒 Требования безопасности
-
-### ✅ Обязательные требования:
-
-1. **Пароли хешируются bcrypt**
-   ```go
-   // ❌ НЕПРАВИЛЬНО
-   user.Password = password
-
-   // ✅ ПРАВИЛЬНО
-   hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-   ```
-
-2. **SQL запросы параметризованы**
-   ```go
-   // ❌ ОПАСНО - SQL инъекции!
-   query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email)
-
-   // ✅ БЕЗОПАСНО
-   query := "SELECT * FROM users WHERE email = $1"
-   db.QueryRow(query, email)
-   ```
-
-3. **JWT токены проверяются**
-   ```go
-   // ❌ БЕЗ ПРОВЕРКИ
-   func ProfileHandler(w http.ResponseWriter, r *http.Request) {
-       // Сразу возвращаем данные
-   }
-
-   // ✅ С ПРОВЕРКОЙ
-   http.HandleFunc("/profile", AuthMiddleware(ProfileHandler))
-   ```
-
-## 🐛 Частые ошибки
-
-### 1. Пароли в открытом виде
-```sql
--- ❌ ПЛОХО: пароль не захеширован
-SELECT password_hash FROM users; -- "123456"
-
--- ✅ ХОРОШО: bcrypt хеш
--- "$2a$10$N9qo8uLOickgx2ZMRZoMye..."
-```
-
-### 2. SQL инъекции
-```go
-// ❌ УЯЗВИМО
-query := "SELECT * FROM users WHERE email = '" + email + "'"
-
-// ✅ ЗАЩИЩЕНО
-query := "SELECT * FROM users WHERE email = $1"
-db.QueryRow(query, email)
-```
-
-### 3. JWT не проверяется
-```go
-// ❌ ОПАСНО
-func ProfileHandler(w http.ResponseWriter, r *http.Request) {
-    // Нет проверки токена!
-}
-
-// ✅ БЕЗОПАСНО
-http.HandleFunc("/profile", AuthMiddleware(ProfileHandler))
 ```
 
 ## ✅ Чек-лист перед сдачей
@@ -307,19 +170,3 @@ SELECT email, password_hash FROM users;
    - Проверьте логи сервера
    - Убедитесь, что все TODO функции реализованы
    - Проверьте правильность JSON в curl запросах
-
-## 🎯 Критерии оценки
-
-### "Зачёт" - все требования выполнены:
-- ✅ Регистрация и авторизация работают
-- ✅ Пароли хешируются bcrypt
-- ✅ JWT токены используются правильно
-- ✅ SQL запросы параметризованы
-- ✅ Защищенные эндпоинты требуют токен
-- ✅ Код компилируется и запускается
-
-### "На доработку":
-- ❌ Пароли в открытом виде
-- ❌ SQL инъекции возможны
-- ❌ JWT не проверяются
-- ❌ Код не компилируется
